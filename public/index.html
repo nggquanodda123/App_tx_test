@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tài Xỉu Online Realtime</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 15px; }
+    .board { background: #1e1e1e; border: 2px solid #e5a93b; border-radius: 16px; padding: 20px; max-width: 420px; margin: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    h2 { color: #e5a93b; margin-top: 0; }
+    .status { font-weight: bold; color: #aaa; margin-bottom: 5px; }
+    .timer { font-size: 3.5rem; color: #ffeb3b; font-weight: bold; margin: 5px 0; }
+    .dice-box { font-size: 2.2rem; background: #2a2a2a; padding: 12px; border-radius: 12px; margin: 15px 0; border: 1px solid #444; }
+    .buttons { display: flex; justify-content: space-between; gap: 10px; margin-top: 15px; }
+    .btn { flex: 1; padding: 15px 10px; font-size: 1.1rem; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; color: white; }
+    .btn-tai { background: linear-gradient(135deg, #e53935, #b71c1c); }
+    .btn-xiu { background: linear-gradient(135deg, #1e88e5, #0d47a1); }
+    .btn small { font-size: 0.85rem; font-weight: normal; opacity: 0.9; display: block; margin-top: 4px; }
+    .history { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-top: 15px; }
+    .dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: white; }
+    .dot-TAI { background: #e53935; }
+    .dot-XIU { background: #1e88e5; }
+  </style>
+</head>
+<body>
+  <div class="board">
+    <h2>TÀI XỈU REALTIME</h2>
+    <div class="status" id="status-text">ĐANG KẾT NỐI...</div>
+    <div class="timer" id="timer">30</div>
+
+    <div class="dice-box" id="dice-display">🎲 🎲 🎲</div>
+
+    <div class="buttons">
+      <button class="btn btn-tai" onclick="bet('TAI')">
+        TÀI (11-18)
+        <small id="money-tai">0đ</small>
+      </button>
+      <button class="btn btn-xiu" onclick="bet('XIU')">
+        XỈU (3-10)
+        <small id="money-xiu">0đ</small>
+      </button>
+    </div>
+
+    <p style="margin-top:20px; color:#888;">Soi Cầu Lịch Sử</p>
+    <div class="history" id="history-box"></div>
+  </div>
+
+  <script>
+    const socket = io();
+
+    function bet(choice) {
+      socket.emit('place_bet', { choice: choice, amount: 500000 });
+    }
+
+    socket.on('game_update', (state) => {
+      document.getElementById('timer').innerText = state.timeRemaining;
+      document.getElementById('money-tai').innerText = state.totalTai.toLocaleString() + 'đ';
+      document.getElementById('money-xiu').innerText = state.totalXiu.toLocaleString() + 'đ';
+
+      if (state.status === 'BETTING') {
+        document.getElementById('status-text').innerText = 'ĐANG ĐẶT CƯỢC';
+        document.getElementById('status-text').style.color = '#4caf50';
+        document.getElementById('dice-display').innerText = '🎲 🎲 🎲';
+      } else {
+        document.getElementById('status-text').innerText = 'KẾT QUẢ PHIÊN';
+        document.getElementById('status-text').style.color = '#ff9800';
+        document.getElementById('dice-display').innerText = state.dice.join(' - ');
+      }
+
+      const historyBox = document.getElementById('history-box');
+      historyBox.innerHTML = '';
+      state.history.forEach(item => {
+        const dot = document.createElement('div');
+        dot.className = `dot dot-${item.result}`;
+        dot.innerText = item.totalScore;
+        historyBox.appendChild(dot);
+      });
+    });
+  </script>
+</body>
+</html>
